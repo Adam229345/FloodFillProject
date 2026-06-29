@@ -1,0 +1,38 @@
+PROGRAM RescueRobotFloodFill
+
+    // Define constants
+    WALL = 1
+    PATH = 0
+    INF = 999999
+    
+    // Movement directions: up, down, left, right
+    dRow = [-1, 1, 0, 0]
+    dCol = [0, 0, -1, 1]
+
+    FUNCTION main()
+        PRINT "Rescue Robot Shortest Path System"
+        PRINT "BFS-Based Flood Fill Algorithm"
+        
+        PRINT "Choose Maze Mode:"
+        PRINT "1. Fixed Test Maze"
+        PRINT "2. Random Disaster Maze"
+        GET choice from user
+        
+        IF choice == 1 THEN
+            maze = getFixedMaze()
+            start = Cell(0, 0)
+            exit = Cell(3, 3)
+            PRINT "Mode Selected: Fixed Test Maze"
+        ELSE
+            rows = 9
+            cols = 9
+            start = Cell(0, 0)
+            exit = Cell(rows/2, cols/2)
+            maze = generateRandomMaze(rows, cols, start, exit)
+            PRINT "Mode Selected: Random Disaster Maze"
+        END IF
+        
+        runRescueRobotSystem(maze, start, exit)
+    END FUNCTION
+
+END PROGRAM

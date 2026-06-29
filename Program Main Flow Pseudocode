@@ -1,38 +1,307 @@
-PROGRAM RescueRobotFloodFill
+========================================================================
+                  RESCUE ROBOT - FLOOD FILL ALGORITHM
+========================================================================
 
-    // Define constants
+CONSTANTS:
     WALL = 1
     PATH = 0
     INF = 999999
-    
-    // Movement directions: up, down, left, right
-    dRow = [-1, 1, 0, 0]
+
+DIRECTIONS:
+    dRow = [-1, 1, 0, 0]    // up, down, left, right
     dCol = [0, 0, -1, 1]
 
-    FUNCTION main()
-        PRINT "Rescue Robot Shortest Path System"
-        PRINT "BFS-Based Flood Fill Algorithm"
+========================================================================
+                         CELL CLASS
+========================================================================
+CLASS Cell:
+    row: integer
+    col: integer
+    
+    CONSTRUCTOR Cell(row, col):
+        this.row = row
+        this.col = col
+    
+    METHOD toString():
+        RETURN "(" + row + ", " + col + ")"
+
+========================================================================
+                    MAIN PROGRAM FLOW
+========================================================================
+PROCEDURE main():
+    PRINT "======================================"
+    PRINT " Rescue Robot Shortest Path System"
+    PRINT " BFS-Based Flood Fill Algorithm"
+    PRINT "======================================"
+    
+    PRINT "\nChoose Maze Mode:"
+    PRINT "1. Fixed Test Maze"
+    PRINT "2. Random Disaster Maze"
+    INPUT choice
+    
+    IF choice == 1 THEN
+        maze = getFixedMaze()
+        start = NEW Cell(0, 0)
+        exit = NEW Cell(3, 3)
+        PRINT "\nMode Selected: Fixed Test Maze"
+        PRINT "Purpose: Controlled testing, debugging, and algorithm analysis"
+    ELSE
+        rows = 9
+        cols = 9
+        start = NEW Cell(0, 0)
+        exit = NEW Cell(rows/2, cols/2)
+        maze = generateRandomMaze(rows, cols, start, exit)
+        PRINT "\nMode Selected: Random Disaster Maze"
+        PRINT "Purpose: Simulate different disaster-damaged building layouts"
+    END IF
+    
+    CALL runRescueRobotSystem(maze, start, exit)
+END PROCEDURE
+
+========================================================================
+                    MAZE GENERATION
+========================================================================
+FUNCTION getFixedMaze() RETURNS 2D integer array:
+    RETURN [
+        [0, 1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 1, 1, 1, 0],
+        [0, 0, 0, 1, 0, 0, 0],
+        [1, 1, 0, 0, 0, 1, 0],
+        [0, 0, 0, 1, 0, 1, 0],
+        [0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0]
+    ]
+
+FUNCTION generateRandomMaze(rows, cols, start, exit) RETURNS 2D integer array:
+    wallProbability = 0.30
+    maze = NULL
+    distance = NULL
+    
+    REPEAT:
+        maze = NEW 2D array[rows][cols]
         
-        PRINT "Choose Maze Mode:"
-        PRINT "1. Fixed Test Maze"
-        PRINT "2. Random Disaster Maze"
-        GET choice from user
+        FOR i = 0 TO rows-1:
+            FOR j = 0 TO cols-1:
+                IF random() < wallProbability THEN
+                    maze[i][j] = WALL
+                ELSE
+                    maze[i][j] = PATH
+                END IF
+            END FOR
+        END FOR
         
-        IF choice == 1 THEN
-            maze = getFixedMaze()
-            start = Cell(0, 0)
-            exit = Cell(3, 3)
-            PRINT "Mode Selected: Fixed Test Maze"
-        ELSE
-            rows = 9
-            cols = 9
-            start = Cell(0, 0)
-            exit = Cell(rows/2, cols/2)
-            maze = generateRandomMaze(rows, cols, start, exit)
-            PRINT "Mode Selected: Random Disaster Maze"
+        maze[start.row][start.col] = PATH
+        maze[exit.row][exit.col] = PATH
+        
+        distance = floodFill(maze, exit)
+    
+    WHILE distance[start.row][start.col] == INF
+    
+    RETURN maze
+
+========================================================================
+                    FLOOD FILL (BFS FROM EXIT)
+========================================================================
+FUNCTION floodFill(maze, exit) RETURNS 2D integer array:
+    rows = maze.length
+    cols = maze[0].length
+    
+    // Initialize distance matrix
+    distance = NEW 2D array[rows][cols]
+    FOR i = 0 TO rows-1:
+        FOR j = 0 TO cols-1:
+            distance[i][j] = INF
+        END FOR
+    END FOR
+    
+    // Start BFS from exit
+    queue = NEW EMPTY Queue
+    distance[exit.row][exit.col] = 0
+    queue.enqueue(exit)
+    
+    // BFS traversal
+    WHILE queue is NOT empty:
+        current = queue.dequeue()
+        
+        // Check all 4 directions
+        FOR dir = 0 TO 3:
+            newRow = current.row + dRow[dir]
+            newCol = current.col + dCol[dir]
+            
+            IF isValidCell(maze, newRow, newCol) THEN
+                newDist = distance[current.row][current.col] + 1
+                IF distance[newRow][newCol] > newDist THEN
+                    distance[newRow][newCol] = newDist
+                    queue.enqueue(NEW Cell(newRow, newCol))
+                END IF
+            END IF
+        END FOR
+    END WHILE
+    
+    RETURN distance
+
+========================================================================
+                    PATH TRACING
+========================================================================
+FUNCTION traceShortestPath(maze, distance, start, exit) RETURNS List of Cell:
+    path = NEW EMPTY ArrayList
+    
+    // Check if exit is reachable
+    IF distance[start.row][start.col] == INF THEN
+        RETURN path
+    END IF
+    
+    // Start from the start position
+    current = start
+    path.add(current)
+    
+    // Follow decreasing distances
+    WHILE NOT (current.row == exit.row AND current.col == exit.col):
+        nextCell = NULL
+        smallestDistance = distance[current.row][current.col]
+        
+        // Check all 4 directions
+        FOR dir = 0 TO 3:
+            newRow = current.row + dRow[dir]
+            newCol = current.col + dCol[dir]
+            
+            IF isValidCell(maze, newRow, newCol) THEN
+                IF distance[newRow][newCol] < smallestDistance THEN
+                    smallestDistance = distance[newRow][newCol]
+                    nextCell = NEW Cell(newRow, newCol)
+                END IF
+            END IF
+        END FOR
+        
+        IF nextCell == NULL THEN
+            path.clear()
+            RETURN path
         END IF
         
-        runRescueRobotSystem(maze, start, exit)
-    END FUNCTION
+        current = nextCell
+        path.add(current)
+    END WHILE
+    
+    RETURN path
 
-END PROGRAM
+========================================================================
+                    UTILITY FUNCTIONS
+========================================================================
+FUNCTION isValidCell(maze, row, col) RETURNS boolean:
+    RETURN row >= 0 AND row < maze.length AND
+           col >= 0 AND col < maze[0].length AND
+           maze[row][col] == PATH
+
+FUNCTION isInPath(path, row, col) RETURNS boolean:
+    FOR EACH cell IN path:
+        IF cell.row == row AND cell.col == col THEN
+            RETURN true
+        END IF
+    END FOR
+    RETURN false
+
+========================================================================
+                    DISPLAY FUNCTIONS
+========================================================================
+PROCEDURE printMaze(maze, start, exit, path):
+    FOR i = 0 TO maze.length-1:
+        FOR j = 0 TO maze[0].length-1:
+            IF i == start.row AND j == start.col THEN
+                PRINT "S "
+            ELSE IF i == exit.row AND j == exit.col THEN
+                PRINT "E "
+            ELSE IF isInPath(path, i, j) THEN
+                PRINT "* "
+            ELSE IF maze[i][j] == WALL THEN
+                PRINT "# "
+            ELSE
+                PRINT ". "
+            END IF
+        END FOR
+        PRINT newline
+    END FOR
+
+PROCEDURE printDistanceMatrix(distance, maze):
+    FOR i = 0 TO distance.length-1:
+        FOR j = 0 TO distance[0].length-1:
+            IF maze[i][j] == WALL THEN
+                PRINT " # "
+            ELSE IF distance[i][j] == INF THEN
+                PRINT " X "
+            ELSE
+                PRINT distance[i][j] formatted as "%2d "
+            END IF
+        END FOR
+        PRINT newline
+    END FOR
+
+PROCEDURE printPath(path):
+    FOR i = 0 TO path.size()-1:
+        PRINT path[i]
+        IF i != path.size()-1 THEN
+            PRINT " -> "
+        END IF
+    END FOR
+    PRINT newline
+
+PROCEDURE printRobotMovement(maze, start, exit, path):
+    FOR step = 0 TO path.size()-1:
+        robot = path[step]
+        PRINT "\nStep " + step + ": Robot is at " + robot
+        
+        FOR i = 0 TO maze.length-1:
+            FOR j = 0 TO maze[0].length-1:
+                IF i == robot.row AND j == robot.col THEN
+                    PRINT "R "
+                ELSE IF i == start.row AND j == start.col THEN
+                    PRINT "S "
+                ELSE IF i == exit.row AND j == exit.col THEN
+                    PRINT "E "
+                ELSE IF maze[i][j] == WALL THEN
+                    PRINT "# "
+                ELSE
+                    PRINT ". "
+                END IF
+            END FOR
+            PRINT newline
+        END FOR
+    END FOR
+
+========================================================================
+                    MAIN SYSTEM EXECUTION
+========================================================================
+PROCEDURE runRescueRobotSystem(maze, start, exit):
+    PRINT "\nOriginal Disaster-Damaged Maze:"
+    CALL printMaze(maze, start, exit, EMPTY list)
+    
+    distance = CALL floodFill(maze, exit)
+    
+    PRINT "\nDistance Matrix After Flood Fill:"
+    CALL printDistanceMatrix(distance, maze)
+    
+    shortestPath = CALL traceShortestPath(maze, distance, start, exit)
+    
+    IF shortestPath.isEmpty() THEN
+        PRINT "\nNo valid path found. The survivor cannot be reached."
+    ELSE
+        PRINT "\nShortest Path Coordinates:"
+        CALL printPath(shortestPath)
+        
+        steps = shortestPath.size() - 1
+        PRINT "\nMinimum Steps Required: " + steps
+        
+        PRINT "\nMaze With Shortest Path:"
+        CALL printMaze(maze, start, exit, shortestPath)
+        
+        PRINT "\nRobot Movement Step by Step:"
+        CALL printRobotMovement(maze, start, exit, shortestPath)
+        
+        PRINT "\nAlgorithm Result:"
+        PRINT "The rescue robot successfully reached the survivor"
+        PRINT "using the shortest path."
+    END IF
+END PROCEDURE
+
+========================================================================
+END OF PSEUDOCODE
+========================================================================

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rescue Robot - BFS Flood Fill</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eaeaea;
+            display: flex;
+            justify-content: center;
+            padding: 2rem 1rem;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: #16213e;
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+        h1 {
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-top: 0;
+            color: #f5c842;
+            border-bottom: 2px solid #f5c84233;
+            padding-bottom: 0.5rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-top: -0.5rem;
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        .controls button {
+            background: #f5c842;
+            border: none;
+            padding: 0.7rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 0 #b38a2a;
+        }
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #b38a2a;
+        }
+        .controls button:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #b38a2a;
+        }
+        .controls button.secondary {
+            background: #3a4a6b;
+            color: #eee;
+            box-shadow: 0 4px 0 #1f2a3d;
+        }
+        .controls button.secondary:hover {
+            background: #4e6188;
+        }
+        .maze-wrapper {
+            overflow-x: auto;
+            background: #0f1a2f;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+        }
+        .maze-grid {
+            display: inline-grid;
+            gap: 2px;
+            background: #0f1a2f;
+        }
+        .cell {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            background: #1f2b44;
+            transition: 0.1s;
+            color: white;
+        }
+        .cell.wall {
+            background: #2d1b1b;
+            color: #4a3a3a;
+        }
+        .cell.path {
+            background: #1a2a3a;
+        }
+        .cell.start {
+            background: #2e7d32;
+            color: white;
+        }
+        .cell.exit {
+            background: #b71c1c;
+            color: white;
+        }
+        .cell.robot {
+            background: #f5c842;
+            color: #1a1a2e;
+        }
+        .cell.onpath {
+            background: #2a6b8f;
+            color: white;
+        }
+        .cell.dist {
+            font-size: 0.7rem;
+            color: #aac;
+        }
+        .cell.dist-unreach {
+            color: #633;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            justify-content: center;
+            margin: 1.2rem 0;
+            font-size: 0.9rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+        }
+        .info-panel {
+            background: #0f1a2f;
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            margin-top: 1.2rem;
+        }
+        .info-panel h3 {
+            margin-top: 0;
+            color: #f5c842;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        .info-panel pre {
+            background: #0b1324;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            color: #c8d6e5;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .path-display {
+            font-family: monospace;
+            background: #0b1324;
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            color: #8ef0b0;
+            word-break: break-all;
+        }
+        .status {
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            background: #1f2b44;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .status.success {
+            background: #1b3a2a;
+            color: #8ef0b0;
+        }
+        .status.fail {
+            background: #3a1b1b;
+            color: #f08e8e;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .label {
+            color: #aab;
+        }
+        @media (max-width: 600px) {
+            .cell {
+                width: 34px;
+                height: 34px;
+                font-size: 0.7rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+            .controls button {
+                padding: 0.5rem 1.2rem;
+                font-size: 0.85rem;
+            }
+        }
+        .step-controls {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 0.5rem 0;
+        }
+        .step-controls button {
+            background: #2a3a5a;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .step-controls button:hover {
+            background: #3a4e74;
+        }
+        .step-controls span {
+            font-weight: 500;
+            color: #f5c842;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🤖 Rescue Robot · Flood Fill</h1>
+    <div class="subtitle">BFS Shortest Path · from Start (S) to Exit (E)</div>
+
+    <div class="controls">
+        <button id="btnFixed">🏗️ Fixed Maze</button>
+        <button id="btnRandom">🌪️ Random Disaster</button>
+        <button id="btnReset" class="secondary">⟲ Reset View</button>
+    </div>
+
+    <!-- Maze display -->
+    <div class="maze-wrapper" id="mazeWrapper">
+        <div id="mazeContainer" class="maze-grid"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-item"><span class="legend-swatch" style="background:#2e7d32;"></span> Start</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#b71c1c;"></span> Exit</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#f5c842;"></span> Robot</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#2a6b8f;"></span> Path</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#2d1b1b;"></span> Wall</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#1a2a3a;"></span> Open</div>
+    </div>
+
+    <!-- Status & info -->
+    <div id="statusBox" class="status">Ready</div>
+
+    <!-- Step-by-step navigation -->
+    <div class="step-controls">
+        <button id="stepPrev">◀ Prev</button>
+        <span id="stepIndicator">Step 0 / 0</span>
+        <button id="stepNext">Next ▶</button>
+        <button id="stepReset" class="secondary" style="margin-left:auto;">↺ Reset Steps</button>
+    </div>
+
+    <div class="info-panel">
+        <div class="flex-row">
+            <h3>📋 Path &amp; Distance</h3>
+            <span id="pathLength" class="label">Length: —</span>
+        </div>
+        <div id="pathDisplay" class="path-display">No path yet.</div>
+        <div id="distMatrixDisplay" style="margin-top:0.8rem;font-size:0.85rem;color:#b0c4de;background:#0b1324;padding:0.6rem 1rem;border-radius:10px;overflow-x:auto;white-space:pre;font-family:monospace;">Distance matrix will appear here.</div>
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    //  JavaScript implementation of the Rescue Robot (BFS Flood Fill)
+    // --------------------------------------------------------------
+
+    const WALL = 1;
+    const PATH = 0;
+    const INF = 999999;
+    const dRow = [-1, 1, 0, 0];
+    const dCol = [0, 0, -1, 1];
+
+    // ----- state -----
+    let maze = [];
+    let rows = 0;
+    let cols = 0;
+    let start = { row: 0, col: 0 };
+    let exit = { row: 0, col: 0 };
+    let distance = [];
+    let shortestPath = [];
+    let currentStep = -1; // -1 means no step displayed
+
+    // DOM elements
+    const mazeContainer = document.getElementById('mazeContainer');
+    const statusBox = document.getElementById('statusBox');
+    const pathDisplay = document.getElementById('pathDisplay');
+    const distMatrixDisplay = document.getElementById('distMatrixDisplay');
+    const pathLengthSpan = document.getElementById('pathLength');
+    const stepIndicator = document.getElementById('stepIndicator');
+    const stepPrevBtn = document.getElementById('stepPrev');
+    const stepNextBtn = document.getElementById('stepNext');
+    const stepResetBtn = document.getElementById('stepReset');
+
+    // ----- helpers -----
+    function createCell(row, col) {
+        return { row, col };
+    }
+
+    function isValidCell(m, r, c) {
+        return r >= 0 && r < m.length && c >= 0 && c < m[0].length && m[r][c] === PATH;
+    }
+
+    // ----- BFS flood fill from exit -----
+    function floodFill(m, exitCell) {
+        const r = m.length;
+        const c = m[0].length;
+        const dist = Array.from({ length: r }, () => Array(c).fill(INF));
+
+        const queue = [];
+        dist[exitCell.row][exitCell.col] = 0;
+        queue.push(createCell(exitCell.row, exitCell.col));
+
+        while (queue.length > 0) {
+            const cur = queue.shift();
+            for (let i = 0; i < 4; i++) {
+                const nr = cur.row + dRow[i];
+                const nc = cur.col + dCol[i];
+                if (isValidCell(m, nr, nc)) {
+                    if (dist[nr][nc] > dist[cur.row][cur.col] + 1) {
+                        dist[nr][nc] = dist[cur.row][cur.col] + 1;
+                        queue.push(createCell(nr, nc));
+                    }
+                }
+            }
+        }
+        return dist;
+    }
+
+    // ----- trace shortest path from start to exit -----
+    function traceShortestPath(m, dist, startCell, exitCell) {
+        if (dist[startCell.row][startCell.col] === INF) return [];
+
+        const path = [];
+        let cur = createCell(startCell.row, startCell.col);
+        path.push(cur);
+
+        while (!(cur.row === exitCell.row && cur.col === exitCell.col)) {
+            let best = null;
+            let bestDist = dist[cur.row][cur.col];
+            for (let i = 0; i < 4; i++) {
+                const nr = cur.row + dRow[i];
+                const nc = cur.col + dCol[i];
+                if (isValidCell(m, nr, nc)) {
+                    if (dist[nr][nc] < bestDist) {
+                        bestDist = dist[nr][nc];
+                        best = createCell(nr, nc);
+                    }
+                }
+            }
+            if (!best) return [];
+            cur = best;
+            path.push(cur);
+        }
+        return path;
+    }
+
+    // ----- generate random maze (ensures at least one path) -----
+    function generateRandomMaze(rows, cols, startCell, exitCell, wallProb = 0.30) {
+        let m;
+        let dist;
+        let attempts = 0;
+        do {
+            m = Array.from({ length: rows }, () =>
+                Array.from({ length: cols }, () => (Math.random() < wallProb ? WALL : PATH))
+            );
+            m[startCell.row][startCell.col] = PATH;
+            m[exitCell.row][exitCell.col] = PATH;
+            dist = floodFill(m, exitCell);
+            attempts++;
+            if (attempts > 200) break;
+        } while (dist[startCell.row][startCell.col] === INF);
+        return m;
+    }
+
+    // ----- fixed maze -----
+    function getFixedMaze() {
+        return [
+            [0, 1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 1, 1, 1, 0],
+            [0, 0, 0, 1, 0, 0, 0],
+            [1, 1, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 1, 0],
+            [0, 1, 1, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0]
+        ];
+    }
+
+    // ----- load maze into state and recompute -----
+    function loadMaze(newMaze, startCell, exitCell) {
+        maze = newMaze;
+        rows = maze.length;
+        cols = maze[0].length;
+        start = { row: startCell.row, col: startCell.col };
+        exit = { row: exitCell.row, col: exitCell.col };
+
+        distance = floodFill(maze, exit);
+        shortestPath = traceShortestPath(maze, distance, start, exit);
+        currentStep = -1; // no step selected
+
+        render();
+        updateInfo();
+        updateStepControls();
+    }
+
+    // ----- rendering -----
+    function render() {
+        // Build grid
+        const grid = document.createElement('div');
+        grid.className = 'maze-grid';
+        grid.style.gridTemplateColumns = `repeat(${cols}, 44px)`;
+
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+
+                const isWall = maze[i][j] === WALL;
+                const isStart = (i === start.row && j === start.col);
+                const isExit = (i === exit.row && j === exit.col);
+                const isOnPath = shortestPath.some(p => p.row === i && p.col === j);
+                const isRobot = (currentStep >= 0 && currentStep < shortestPath.length &&
+                    shortestPath[currentStep].row === i && shortestPath[currentStep].col === j);
+
+                if (isWall) cell.classList.add('wall');
+                else if (isRobot) cell.classList.add('robot');
+                else if (isStart) cell.classList.add('start');
+                else if (isExit) cell.classList.add('exit');
+                else if (isOnPath) cell.classList.add('onpath');
+                else cell.classList.add('path');
+
+                // Show distance number in open cells (except walls)
+                if (!isWall && distance[i] && distance[i][j] !== undefined) {
+                    const d = distance[i][j];
+                    if (d === INF) {
+                        cell.textContent = '∞';
+                        cell.classList.add('dist-unreach');
+                    } else {
+                        cell.textContent = d;
+                        cell.classList.add('dist');
+                    }
+                } else if (isWall) {
+                    cell.textContent = '█';
+                } else {
+                    cell.textContent = '';
+                }
+
+                // override labels for start/exit/robot
+                if (isRobot) cell.textContent = 'R';
+                else if (isStart) cell.textContent = 'S';
+                else if (isExit) cell.textContent = 'E';
+
+                grid.appendChild(cell);
+            }
+        }
+
+        mazeContainer.innerHTML = '';
+        mazeContainer.appendChild(grid);
+    }
+
+    // ----- update info panel -----
+    function updateInfo() {
+        // Status
+        if (distance[start.row] && distance[start.row][start.col] === INF) {
+            statusBox.textContent = '❌ No path found! Survivor unreachable.';
+            statusBox.className = 'status fail';
+        } else {
+            const len = shortestPath.length > 0 ? shortestPath.length - 1 : 0;
+            statusBox.textContent = `✅ Path found! Minimum steps: ${len}`;
+            statusBox.className = 'status success';
+        }
+
+        // Path display
+        if (shortestPath.length === 0) {
+            pathDisplay.textContent = 'No path available.';
+            pathLengthSpan.textContent = 'Length: —';
+        } else {
+            const pathStr = shortestPath.map(p => `(${p.row},${p.col})`).join(' → ');
+            pathDisplay.textContent = pathStr;
+            pathLengthSpan.textContent = `Length: ${shortestPath.length - 1} steps`;
+        }
+
+        // Distance matrix
+        let distStr = '';
+        for (let i = 0; i < rows; i++) {
+            let rowStr = '';
+            for (let j = 0; j < cols; j++) {
+                if (maze[i][j] === WALL) {
+                    rowStr += ' # ';
+                } else if (distance[i][j] === INF) {
+                    rowStr += ' X ';
+                } else {
+                    rowStr += String(distance[i][j]).padStart(2, ' ') + ' ';
+                }
+            }
+            distStr += rowStr + '\n';
+        }
+        distMatrixDisplay.textContent = distStr || '—';
+    }
+
+    // ----- step controls -----
+    function updateStepControls() {
+        const total = shortestPath.length;
+        if (total === 0) {
+            stepIndicator.textContent = 'Step 0 / 0';
+            currentStep = -1;
+            stepPrevBtn.disabled = true;
+            stepNextBtn.disabled = true;
+            return;
+        }
+        if (currentStep < 0) currentStep = 0;
+        if (currentStep >= total) currentStep = total - 1;
+        stepIndicator.textContent = `Step ${currentStep} / ${total - 1}`;
+        stepPrevBtn.disabled = (currentStep <= 0);
+        stepNextBtn.disabled = (currentStep >= total - 1);
+        render();
+    }
+
+    function goToStep(idx) {
+        const total = shortestPath.length;
+        if (total === 0) return;
+        if (idx < 0) idx = 0;
+        if (idx >= total) idx = total - 1;
+        currentStep = idx;
+        updateStepControls();
+        // highlight in info
+        const p = shortestPath[currentStep];
+        statusBox.textContent = `📍 Robot at (${p.row}, ${p.col}) · step ${currentStep} of ${total - 1}`;
+        statusBox.className = 'status';
+    }
+
+    function resetSteps() {
+        if (shortestPath.length === 0) return;
+        currentStep = 0;
+        updateStepControls();
+        const p = shortestPath[currentStep];
+        statusBox.textContent = `📍 Robot at (${p.row}, ${p.col}) · step ${currentStep} of ${shortestPath.length - 1}`;
+        statusBox.className = 'status';
+    }
+
+    // ----- load fixed maze -----
+    function loadFixed() {
+        const m = getFixedMaze();
+        const s = { row: 0, col: 0 };
+        const e = { row: 3, col: 3 };
+        // ensure exit is path
+        m[e.row][e.col] = PATH;
+        m[s.row][s.col] = PATH;
+        loadMaze(m, s, e);
+        statusBox.textContent = '🏗️ Fixed maze loaded.';
+        statusBox.className = 'status';
+        resetSteps();
+    }
+
+    // ----- load random maze -----
+    function loadRandom() {
+        const r = 9;
+        const c = 9;
+        const s = { row: 0, col: 0 };
+        const e = { row: Math.floor(r / 2), col: Math.floor(c / 2) };
+        const m = generateRandomMaze(r, c, s, e, 0.30);
+        loadMaze(m, s, e);
+        statusBox.textContent = '🌪️ Random disaster maze generated.';
+        statusBox.className = 'status';
+        resetSteps();
+    }
+
+    // ----- event binding -----
+    document.getElementById('btnFixed').addEventListener('click', loadFixed);
+    document.getElementById('btnRandom').addEventListener('click', loadRandom);
+    document.getElementById('btnReset').addEventListener('click', () => { render();
+        updateInfo(); });
+
+    stepPrevBtn.addEventListener('click', () => {
+        if (shortestPath.length === 0) return;
+        goToStep(currentStep - 1);
+    });
+    stepNextBtn.addEventListener('click', () => {
+        if (shortestPath.length === 0) return;
+        goToStep(currentStep + 1);
+    });
+    stepResetBtn.addEventListener('click', resetSteps);
+
+    // ----- initial load -----
+    loadFixed();
+</script>
+</body>
+</html>

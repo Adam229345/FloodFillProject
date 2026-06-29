@@ -1,1 +1,2 @@
 # FloodFillProject
+Given a two-dimensional maze representing a disaster-damaged shopping complex, find the shortest path from a rescue robot's starting position at the edge of the maze to a survivor's safe room located at the center. The robot can only move up, down, left, and right, and it cannot pass through walls or rubble. The system must output the shortest path coordinates and the minimum number of movement steps.
